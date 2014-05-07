@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "bitbucket_issue_migration", "bitbucket_issue_migration.pyproj", "{0DFF231C-A5D3-4ED6-8FF1-1C0F1DC3E3B3}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "berlios_issue_migration", "berlios_issue_migration.pyproj", "{0DFF231C-A5D3-4ED6-8FF1-1C0F1DC3E3B3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
