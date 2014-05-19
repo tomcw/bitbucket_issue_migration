@@ -124,7 +124,7 @@ github_password = getpass.getpass()
 #DEBUG
 (options, args) = parser.parse_args()
 options.github_username = "tomcw"
-options.github_repo = "tomcw/test4"
+options.github_repo = "tomcw/test6"
 #options.dry_run = True     # Unsupported
 github_password = ?
 #DEBUG(END)
@@ -332,7 +332,6 @@ def add_bugs_to_list():
 
         bug_count += 1
         github_issues.append(issue)
-        #break   ### DEBUG
 
     return bug_count
 
@@ -358,9 +357,6 @@ def add_features_to_list():
         #timestamp_closed  = int( feature.find('close_date').text )    # 0 = still open
         #feature_group_id  = int( feature.find('bug_group_id').text )  # NB. No equivalent for features
 
-        #if feature_id_str != '5557':    ### DEBUG
-        #    continue
-    
         #
 
         history_list = parse_feature( int(feature_id_str) )
@@ -437,13 +433,13 @@ def add_features_to_list():
 
         feature_count += 1
         github_issues.append(issue)
-        #break   ### DEBUG
 
     return feature_count
 
 ####
 
 def add_new_issues():
+#    f = open('F:\\Apple][\\AppleWin\\berlios\\debug_bugs.txt', 'wb')
     issue_count = 0
     for issue in github_issues:
 
@@ -456,27 +452,42 @@ def add_new_issues():
         if issue[3] == '':
             del issue_data['assignee']
         ni = github.issues.create(issue_data, options.github_repo.split('/')[0], options.github_repo.split('/')[1] )
+#        f.write( issue[1] )
+#        f.write( issue[2] )
 
         for history in issue[6]:
                 create_res = github.issues.comments.create(ni.number,
                                      history,
                                      options.github_repo.split('/')[0],
                                      options.github_repo.split('/')[1])
+#                f.write( history )
+
+                # Attempt to serialise creation of comments: open issue after creating each comment!
+                url_str = "https://github.com/" + options.github_repo + "/issues/" + str(ni.number)
+                content = urllib2.urlopen(url_str).read()
 
                 errorCount = 0;
                 while (errorCount < 10):
                     try:
-                        comment_res = github.issues.comments.get(create_res.id,         # Serialise creation of comments
+                        comment_res = github.issues.comments.get(create_res.id,         # Attempt to serialise creation of comments
                                              user=options.github_repo.split('/')[0],
                                              repo=options.github_repo.split('/')[1])
                         break
                     except:                                                             # Sometimes get a "NotFound: 404 - Not Found" exception
                         errorCount = errorCount + 1
+                        dbg_str = "Exception on get comment at issue #" + str(issue_count)
+                        print dbg_str
+#                        f.write( dbg_str )
+#                        f.write('\n')
                         time.sleep(0.200)
 
                 if errorCount >= 10:
                     print "Failed to get comment - aborting at issue #" + str(issue_count)
                     return
+
+                if create_res.body != comment_res.body:
+                    print create_res.body
+                    print comment_res.body
 
         if issue[5] != 1:
                 github.issues.update(ni.number,
@@ -485,6 +496,10 @@ def add_new_issues():
                                      repo=options.github_repo.split('/')[1])
 
         issue_count = issue_count + 1
+        print str(issue_count)
+#        f.write('\n')
+
+#    f.close()
 
 ####
 
