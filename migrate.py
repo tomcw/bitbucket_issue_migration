@@ -124,9 +124,8 @@ github_password = getpass.getpass()
 #DEBUG
 (options, args) = parser.parse_args()
 options.github_username = "tomcw"
-options.github_repo = "tomcw/test6"
-#options.dry_run = True     # Unsupported
-github_password = ?
+options.github_repo = "tomcw/test7"
+github_password = ""    # Set password here
 #DEBUG(END)
 
 # Login in to github and create object
@@ -301,6 +300,11 @@ def add_bugs_to_list():
                  []                                                                             # history
                 ]
 
+        closed = [0,    # number of times closed
+                  0,    # ts
+                  ''    # user
+                 ]
+
         for history in bug.iter('history'):
             ts     = int( history.find('date').text )
             userId = int( history.find('mod_by').text )
@@ -312,7 +316,10 @@ def add_bugs_to_list():
             if history.find('field_name').text == 'details':
                 issue[6].append( timestamp_hdr(ts, kUTC_Offset, user) + history.find('old_value').text )
             elif history.find('field_name').text == 'close_date':
-                issue[6].append( timestamp_hdr(ts, kUTC_Offset, user) + 'Closed.' )
+                #issue[6].append( timestamp_hdr(ts, kUTC_Offset, user) + 'Closed.' )
+                closed[0] = closed[0] + 1
+                closed[1] = ts
+                closed[2] = user
             elif history.find('field_name').text == 'category_id':
                 pass
             elif history.find('field_name').text == 'assigned_to':
@@ -329,6 +336,10 @@ def add_bugs_to_list():
                 pass
             else:
                 print history.find('field_name').text
+
+        if closed[0] > 1:
+            #print 'Bug# ' + bug_id_str + ' closed = ' + str(closed[0])
+            issue[6].append( timestamp_hdr(closed[1], kUTC_Offset, closed[2]) + 'Closed.' )
 
         bug_count += 1
         github_issues.append(issue)
@@ -402,6 +413,11 @@ def add_features_to_list():
         while len(history_list):        # Clear the list
             history_list.pop()
 
+        closed = [0,    # number of times closed
+                  0,    # ts
+                  ''    # user
+                 ]
+
         for history in feature.iter('history'):
             ts     = int( history.find('date').text )
             userId = int( history.find('mod_by').text )
@@ -411,7 +427,10 @@ def add_features_to_list():
 #            if history.find('field_name').text == 'details':                                   # Not in the exported file - use HTML pages instead
 #                issue[6].append( timestamp_hdr(ts, kUTC_Feature_Offset, user) + history.find('old_value').text )
             if history.find('field_name').text == 'close_date':
-                issue[6].append( timestamp_hdr(ts, kUTC_Feature_Offset, user) + 'Closed.' )
+                #issue[6].append( timestamp_hdr(ts, kUTC_Feature_Offset, user) + 'Closed.' )
+                closed[0] = closed[0] + 1
+                closed[1] = ts
+                closed[2] = user
             elif history.find('field_name').text == 'category_id':
                 pass
             elif history.find('field_name').text == 'assigned_to':
@@ -430,6 +449,10 @@ def add_features_to_list():
                 pass
             else:
                 print history.find('field_name').text
+
+        if closed[0] > 1:
+            #print 'Feature# ' + feature_id_str + ' closed = ' + str(closed[0])
+            issue[6].append( timestamp_hdr(closed[1], kUTC_Feature_Offset, closed[2]) + 'Closed.' )
 
         feature_count += 1
         github_issues.append(issue)
@@ -456,44 +479,53 @@ def add_new_issues():
 #        f.write( issue[2] )
 
         for history in issue[6]:
-                create_res = github.issues.comments.create(ni.number,
-                                     history,
-                                     options.github_repo.split('/')[0],
-                                     options.github_repo.split('/')[1])
-#                f.write( history )
+            create_res = github.issues.comments.create(ni.number,
+                                    history,
+                                    options.github_repo.split('/')[0],
+                                    options.github_repo.split('/')[1])
+#            f.write( history )
 
-                # Attempt to serialise creation of comments: open issue after creating each comment!
-                url_str = "https://github.com/" + options.github_repo + "/issues/" + str(ni.number)
-                content = urllib2.urlopen(url_str).read()
+            # Attempt to serialise creation of comments: open issue after creating each comment!
+            url_str = "https://github.com/" + options.github_repo + "/issues/" + str(ni.number)
+            content = urllib2.urlopen(url_str).read()
 
-                errorCount = 0;
-                while (errorCount < 10):
-                    try:
-                        comment_res = github.issues.comments.get(create_res.id,         # Attempt to serialise creation of comments
-                                             user=options.github_repo.split('/')[0],
-                                             repo=options.github_repo.split('/')[1])
-                        break
-                    except:                                                             # Sometimes get a "NotFound: 404 - Not Found" exception
-                        errorCount = errorCount + 1
-                        dbg_str = "Exception on get comment at issue #" + str(issue_count)
-                        print dbg_str
-#                        f.write( dbg_str )
-#                        f.write('\n')
-                        time.sleep(0.200)
+            errorCount = 0;
+            while (errorCount < 10):
+                try:
+                    comment_res = github.issues.comments.get(create_res.id,         # Attempt to serialise creation of comments
+                                            user=options.github_repo.split('/')[0],
+                                            repo=options.github_repo.split('/')[1])
+                    break
+                except:                                                             # Sometimes get a "NotFound: 404 - Not Found" exception
+                    errorCount = errorCount + 1
+                    dbg_str = "Exception on get comment at issue #" + str(issue_count)
+                    print dbg_str
+#                    f.write( dbg_str )
+#                    f.write('\n')
+                    time.sleep(0.200)
 
-                if errorCount >= 10:
-                    print "Failed to get comment - aborting at issue #" + str(issue_count)
-                    return
+            if errorCount >= 10:
+                print "Failed to get comment - aborting at issue #" + str(issue_count)
+                return
 
-                if create_res.body != comment_res.body:
-                    print create_res.body
-                    print comment_res.body
+            if create_res.body != comment_res.body:
+                print create_res.body
+                print comment_res.body
 
         if issue[5] != 1:
-                github.issues.update(ni.number,
+            errorCount = 0
+            while (errorCount < 10):
+                try:
+                    github.issues.update(ni.number,
                                      {'state': 'closed'},
                                      user=options.github_repo.split('/')[0],
                                      repo=options.github_repo.split('/')[1])
+                    break
+                except:
+                    errorCount = errorCount + 1
+                    dbg_str = "Exception on close at issue #" + str(issue_count)
+                    print dbg_str
+                    time.sleep(0.200)
 
         issue_count = issue_count + 1
         print str(issue_count)
